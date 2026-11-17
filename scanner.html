@@ -100,12 +100,17 @@
       <h1>NATAL RBK 2026</h1>
       <h2>SCANNER CHECK-IN</h2>
 
-      <p class="hint">
-        Arahkan kamera HP ke QR Code kartu peserta.
-      </p>
-
-      <div id="reader"></div>
-
+      <input
+  type="password"
+  id="scannerPin"
+  placeholder="Masukkan PIN petugas"
+  maxlength="4"
+  inputmode="numeric"
+  autocomplete="off"
+  style="width:100%;padding:14px;font-size:18px;
+  border:1px solid #ccc;border-radius:9px;margin-top:12px;"
+>
+<div id="reader"></div>
       <div id="status">
         Menunggu kamera dan QR Code...
       </div>
@@ -198,9 +203,10 @@ async function handleScan(decodedText) {
 
   try {
     const result = await callAPI({
-      action: 'checkin',
-      token: decodedText
-    });
+  action: 'checkin',
+  token: decodedText,
+  pin: document.getElementById('scannerPin').value
+});
 
     if (result.success) {
       showStatus(
