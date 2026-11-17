@@ -1,0 +1,300 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scanner Natal RBK 2026</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #eef4f0;
+      color: #174b39;
+      font-family: Arial, sans-serif;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: 20px auto;
+      text-align: center;
+    }
+
+    .panel {
+      background: white;
+      border-radius: 16px;
+      padding: 22px;
+      box-shadow: 0 4px 20px #0001;
+    }
+
+    h1 { font-size: 26px; }
+
+    #reader {
+      width: 100%;
+      margin: 20px auto;
+      overflow: hidden;
+      border-radius: 12px;
+    }
+
+    #status {
+      padding: 18px;
+      border-radius: 10px;
+      background: #f1f3f2;
+      margin-top: 16px;
+      font-weight: bold;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }
+
+    .success {
+      background: #d9f5e5 !important;
+      color: #12623c;
+    }
+
+    .error {
+      background: #ffe2e2 !important;
+      color: #a21d1d;
+    }
+
+    .duplicate {
+      background: #fff0cc !important;
+      color: #805500;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 12px;
+      border: 0;
+      border-radius: 9px;
+      background: #176b4b;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: .5;
+    }
+
+    .back {
+      background: #315d8b;
+    }
+
+    .hint {
+      color: #68776f;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+
+<body>
+  <main class="container">
+    <section class="panel">
+      <h1>NATAL RBK 2026</h1>
+      <h2>SCANNER CHECK-IN</h2>
+
+      <p class="hint">
+        Arahkan kamera HP ke QR Code kartu peserta.
+      </p>
+
+      <div id="reader"></div>
+
+      <div id="status">
+        Menunggu kamera dan QR Code...
+      </div>
+
+      <button id="startButton">
+        MULAI SCAN
+      </button>
+
+      <button id="stopButton" disabled>
+        HENTIKAN KAMERA
+      </button>
+
+      <button class="back"
+        onclick="location.href='./'">
+        KEMBALI KE REGISTRASI
+      </button>
+    </section>
+  </main>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbxxDRQUZT3tRJYyw0BBJtaq-2ympNdhoogv6JqHOlbTZkRSX7ZoWitPLcerMLICVPbL/exec';
+
+let scanner = null;
+let running = false;
+let processing = false;
+let lastToken = '';
+let lastScanTime = 0;
+
+const statusBox = document.getElementById('status');
+const startButton = document.getElementById('startButton');
+const stopButton = document.getElementById('stopButton');
+
+function showStatus(message, type) {
+  statusBox.textContent = message;
+  statusBox.className = type || '';
+}
+
+function callAPI(params) {
+  return new Promise((resolve, reject) => {
+    const callbackName =
+      'rbkScan_' + Date.now() + '_' +
+      Math.floor(Math.random() * 100000);
+
+    const script = document.createElement('script');
+    const query = new URLSearchParams({
+      ...params,
+      callback: callbackName
+    });
+
+    const timeout = setTimeout(() => {
+      cleanup();
+      reject(new Error('Server tidak merespons.'));
+    }, 20000);
+
+    function cleanup() {
+      clearTimeout(timeout);
+      delete window[callbackName];
+      script.remove();
+    }
+
+    window[callbackName] = data => {
+      cleanup();
+      resolve(data);
+    };
+
+    script.onerror = () => {
+      cleanup();
+      reject(new Error('Gagal menghubungi server.'));
+    };
+
+    script.src = API_URL + '?' + query.toString();
+    document.body.appendChild(script);
+  });
+}
+
+async function handleScan(decodedText) {
+  const now = Date.now();
+
+  if (processing) return;
+
+  if (decodedText === lastToken && now - lastScanTime < 4000) {
+    return;
+  }
+
+  processing = true;
+  lastToken = decodedText;
+  lastScanTime = now;
+
+  showStatus('QR terbaca. Memeriksa database...', '');
+
+  try {
+    const result = await callAPI({
+      action: 'checkin',
+      token: decodedText
+    });
+
+    if (result.success) {
+      showStatus(
+        'CHECK-IN BERHASIL!\n' +
+        result.registrationId + '\n' +
+        result.name + '\n' +
+        'KKA: ' + result.kka,
+        'success'
+      );
+    } else if (result.duplicate) {
+      showStatus(
+        'SUDAH CHECK-IN!\n' +
+        result.registrationId + '\n' +
+        result.name,
+        'duplicate'
+      );
+    } else {
+      showStatus(
+        result.message || 'QR TIDAK VALID.',
+        'error'
+      );
+    }
+
+  } catch (error) {
+    showStatus(error.message, 'error');
+  }
+
+  setTimeout(() => {
+    processing = false;
+  }, 1800);
+}
+
+async function startScanner() {
+  if (running) return;
+
+  try {
+    scanner = new Html5Qrcode('reader');
+
+    const cameras = await Html5Qrcode.getCameras();
+
+    if (!cameras || cameras.length === 0) {
+      throw new Error('Kamera tidak ditemukan.');
+    }
+
+    const camera = cameras.find(c =>
+      /back|rear|environment/i.test(c.label)
+    ) || cameras[cameras.length - 1];
+
+    await scanner.start(
+      camera.id,
+      {
+        fps: 10,
+        qrbox: { width: 250, height: 250 }
+      },
+      handleScan,
+      () => {}
+    );
+
+    running = true;
+    startButton.disabled = true;
+    stopButton.disabled = false;
+
+    showStatus('Kamera aktif. Silakan scan QR peserta.', '');
+
+  } catch (error) {
+    showStatus(
+      'Tidak dapat membuka kamera: ' + error.message,
+      'error'
+    );
+  }
+}
+
+async function stopScanner() {
+  if (!scanner || !running) return;
+
+  try {
+    await scanner.stop();
+    scanner.clear();
+  } catch (error) {
+    console.error(error);
+  }
+
+  running = false;
+  processing = false;
+  scanner = null;
+
+  startButton.disabled = false;
+  stopButton.disabled = true;
+
+  showStatus('Kamera dihentikan.', '');
+}
+
+startButton.addEventListener('click', startScanner);
+stopButton.addEventListener('click', stopScanner);
+</script>
+</body>
+</html>
