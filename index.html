@@ -1,0 +1,393 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Registrasi Natal RBK 2026</title>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 24px 16px;
+      background: #f1f5f3;
+      font-family: Arial, sans-serif;
+      color: #183d32;
+    }
+
+    .container {
+      max-width: 480px;
+      margin: 25px auto;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .header h1 {
+      margin-bottom: 8px;
+      font-size: 27px;
+    }
+
+    .header p { color: #64746d; }
+
+    .panel {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 5px 24px #0000000d;
+    }
+
+    label {
+      display: block;
+      margin: 16px 0 7px;
+      font-weight: bold;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 13px;
+      border: 1px solid #ccd8d2;
+      border-radius: 9px;
+      font-size: 16px;
+      background: white;
+    }
+
+    button {
+      width: 100%;
+      border: 0;
+      border-radius: 9px;
+      padding: 14px;
+      margin-top: 20px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      background: #176b4b;
+      color: white;
+    }
+
+    button:disabled {
+      opacity: .6;
+      cursor: wait;
+    }
+
+    #message {
+      margin-top: 15px;
+      text-align: center;
+      font-size: 14px;
+    }
+
+    #result {
+      display: none;
+      margin-top: 25px;
+    }
+
+    .ticket {
+      background: white;
+      border: 2px solid #176b4b;
+      border-radius: 16px;
+      padding: 24px;
+      text-align: center;
+    }
+
+    .ticket-brand {
+      background: #174b39;
+      color: white;
+      padding: 14px;
+      border-radius: 10px;
+      margin-bottom: 18px;
+    }
+
+    .ticket-brand h2 {
+      margin: 0;
+      font-size: 21px;
+    }
+
+    .ticket-brand p {
+      margin: 7px 0 0;
+      font-size: 13px;
+    }
+
+    .ticket-number {
+      font-size: 28px;
+      font-weight: bold;
+      color: #176b4b;
+      margin: 15px 0;
+    }
+
+    .ticket-name {
+      font-size: 21px;
+      font-weight: bold;
+      overflow-wrap: anywhere;
+    }
+
+    .ticket-kka {
+      color: #66756e;
+      margin-top: 7px;
+    }
+
+    #qrcode {
+      display: flex;
+      justify-content: center;
+      margin: 20px auto;
+    }
+
+    #qrcode img, #qrcode canvas {
+      margin: auto;
+    }
+
+    .ticket-note {
+      font-size: 12px;
+      color: #66756e;
+      margin-top: 15px;
+    }
+
+    .download {
+      background: #315d8b;
+    }
+
+    .new-registration {
+      background: #e8eee9;
+      color: #174b39;
+    }
+
+    .footer {
+      text-align: center;
+      color: #87938d;
+      font-size: 12px;
+      margin-top: 25px;
+    }
+  </style>
+</head>
+
+<body>
+  <main class="container">
+    <header class="header">
+      <h1>NATAL RBK 2026</h1>
+      <p>Formulir Registrasi Peserta</p>
+    </header>
+
+    <section class="panel" id="formPanel">
+      <h2>Data Peserta</h2>
+
+      <form id="registrationForm">
+        <label for="name">Nama Lengkap</label>
+        <input id="name" type="text"
+          placeholder="Masukkan nama lengkap"
+          required maxlength="100">
+
+        <label for="phone">Nomor WhatsApp</label>
+        <input id="phone" type="tel"
+          placeholder="Contoh: 081234567890"
+          required maxlength="20">
+
+        <label for="kka">KKA</label>
+        <select id="kka" required>
+          <option value="">Pilih KKA</option>
+          <option>Berea</option>
+          <option>Kana</option>
+          <option>Yeriko</option>
+          <option>Betsaida</option>
+          <option>Arimatea</option>
+          <option>Hebron</option>
+          <option>Nazareth</option>
+          <option>Sekolah Minggu</option>
+          <option>Undangan</option>
+        </select>
+
+        <button id="submitButton" type="submit">
+          DAFTAR SEKARANG
+        </button>
+      </form>
+
+      <div id="message" role="status"></div>
+    </section>
+
+    <section id="result">
+      <div class="ticket" id="ticket">
+        <div class="ticket-brand">
+          <h2>RUMAH BEJANA KEMULIAAN</h2>
+          <p>NATAL RBK 2026</p>
+        </div>
+
+        <p>KARTU PESERTA</p>
+        <div class="ticket-number" id="ticketNumber"></div>
+        <div class="ticket-name" id="ticketName"></div>
+        <div class="ticket-kka" id="ticketKka"></div>
+
+        <div id="qrcode"></div>
+
+        <div class="ticket-note">
+          Simpan kartu ini dan tunjukkan QR Code saat check-in.
+        </div>
+      </div>
+
+      <button class="download" id="downloadButton">
+        UNDUH KARTU PESERTA (PNG)
+      </button>
+
+      <button class="new-registration" id="newButton">
+        Registrasi Peserta Berikutnya
+      </button>
+    </section>
+
+    <footer class="footer">
+      Sistem Registrasi Natal RBK 2026
+    </footer>
+  </main>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbxxDRQUZT3tRJYyw0BBJtaq-2ympNdhoogv6JqHOlbTZkRSX7ZoWitPLcerMLICVPbL/exec';
+
+function callAPI(params) {
+  return new Promise((resolve, reject) => {
+    const callbackName =
+      'rbkCallback_' + Date.now() + '_' +
+      Math.floor(Math.random() * 100000);
+
+    const script = document.createElement('script');
+    const query = new URLSearchParams({
+      ...params,
+      callback: callbackName
+    });
+
+    const timeout = setTimeout(() => {
+      cleanup();
+      reject(new Error('Koneksi ke server terputus. Silakan coba lagi.'));
+    }, 20000);
+
+    function cleanup() {
+      clearTimeout(timeout);
+      delete window[callbackName];
+      script.remove();
+    }
+
+    window[callbackName] = function(data) {
+      cleanup();
+      resolve(data);
+    };
+
+    script.onerror = function() {
+      cleanup();
+      reject(new Error('Tidak dapat menghubungi server.'));
+    };
+
+    script.src = API_URL + '?' + query.toString();
+    document.body.appendChild(script);
+  });
+}
+
+const form = document.getElementById('registrationForm');
+const submitButton = document.getElementById('submitButton');
+const message = document.getElementById('message');
+
+form.addEventListener('submit', async function(event) {
+  event.preventDefault();
+
+  const name = document.getElementById('name').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  const kka = document.getElementById('kka').value;
+
+  if (!name || !phone || !kka) {
+    message.textContent = 'Mohon lengkapi semua data.';
+    return;
+  }
+
+  submitButton.disabled = true;
+  submitButton.textContent = 'MEMPROSES...';
+  message.textContent = 'Sedang menyimpan pendaftaran...';
+
+  try {
+    const result = await callAPI({
+      action: 'register',
+      name: name,
+      phone: phone,
+      kka: kka
+    });
+
+    if (!result.success) {
+      throw new Error(result.message || 'Registrasi gagal.');
+    }
+
+    document.getElementById('ticketNumber').textContent =
+      result.registrationId;
+
+    document.getElementById('ticketName').textContent =
+      result.name;
+
+    document.getElementById('ticketKka').textContent =
+      'KKA: ' + result.kka;
+
+    const qrContainer = document.getElementById('qrcode');
+    qrContainer.innerHTML = '';
+
+    new QRCode(qrContainer, {
+      text: result.token,
+      width: 190,
+      height: 190,
+      correctLevel: QRCode.CorrectLevel.H
+    });
+
+    document.getElementById('formPanel').style.display = 'none';
+    document.getElementById('result').style.display = 'block';
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  } catch (error) {
+    message.textContent = error.message;
+    submitButton.disabled = false;
+    submitButton.textContent = 'DAFTAR SEKARANG';
+  }
+});
+
+document.getElementById('downloadButton')
+  .addEventListener('click', async function() {
+    const button = this;
+    button.disabled = true;
+    button.textContent = 'MENYIAPKAN PNG...';
+
+    try {
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      const canvas = await html2canvas(
+        document.getElementById('ticket'),
+        { scale: 2, backgroundColor: '#ffffff' }
+      );
+
+      const link = document.createElement('a');
+      link.download =
+        document.getElementById('ticketNumber').textContent +
+        '-Natal-RBK-2026.png';
+
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+
+    } catch (error) {
+      alert('Gagal membuat kartu PNG. Silakan coba lagi.');
+    }
+
+    button.disabled = false;
+    button.textContent = 'UNDUH KARTU PESERTA (PNG)';
+  });
+
+document.getElementById('newButton')
+  .addEventListener('click', function() {
+    document.getElementById('result').style.display = 'none';
+    document.getElementById('formPanel').style.display = 'block';
+
+    form.reset();
+    message.textContent = '';
+    submitButton.disabled = false;
+    submitButton.textContent = 'DAFTAR SEKARANG';
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+</script>
+</body>
+</html>
