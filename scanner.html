@@ -234,9 +234,22 @@ async function handleScan(decodedText) {
     showStatus(error.message, 'error');
   }
 
-  setTimeout(() => {
-    processing = false;
-  }, 1800);
+  if (scanner && running) {
+  try {
+    await scanner.stop();
+    scanner.clear();
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+running = false;
+scanner = null;
+
+startButton.disabled = false;
+stopButton.disabled = true;
+
+processing = false;
 }
 
 async function startScanner() {
